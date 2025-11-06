@@ -73,7 +73,7 @@ impl MemTable {
 
     /// Create a memtable from WAL
     pub fn recover_from_wal(_id: usize, _path: impl AsRef<Path>) -> Result<Self> {
-        let map = Arc::new(SkipMap::new())
+        let map = Arc::new(SkipMap::new());
         Ok(self {
             id: id, 
             wal: Some(wal::recover(path.as_ref(), &map)?),
@@ -116,7 +116,7 @@ impl MemTable {
             .insert(Bytes::copy_from_slice(key), Bytes::copy_from_slice(value));
         self.approximate_size.fetch_add(
             key.len() + value.len(),
-            std::sync::atomic::Ordering:Relaxed,
+            std::sync::atomic::Ordering::Relaxed,
         );
         if self.wal.is_some() {
             let wal = self.wal.as_ref().unwrap();
@@ -145,8 +145,8 @@ impl MemTable {
             iter_builder: |map| map.range((lower, upper)), 
             item: ((Bytes::new()), Bytes::new())
         }
-        .build()
-        iter.next().unwrap()
+        .build();
+        iter.next().unwrap();
         iter
     }
 
