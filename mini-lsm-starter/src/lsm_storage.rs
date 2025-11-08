@@ -308,7 +308,7 @@ impl LsmStorageInner {
                 return Ok(None)
             }
             return Ok(Some(value));
-        }
+        };
 
         for memtable in snapshot.imm_memtables.iter() {
             if let Some(value) = memtable.get(key) {
@@ -317,7 +317,7 @@ impl LsmStorageInner {
                 }
                 return Ok(Some(value));
             }
-        }
+        };
 
         let mut l0_iter = Vec::with_capacity(snapshot.l0_sstables.len());
 
@@ -342,10 +342,10 @@ impl LsmStorageInner {
         }
 
         let l0_iter = MergeIterator::create(l0_iter);
-        for (_, level_sst_ids in &snapshot.levels) {
+        for (_, level_sst_ids) in &snapshot.levels {
             let mut level_ssts = Vec::with_capacity(level_sst_ids.len());
             for table in level_ssts_ids {
-                let table = snapshot.sstables[table]clone();
+                let table = snapshot.sstables[table].clone();
                 if keep_table = bloom(key, &table) {
                     level_ssts.push(table);
                 }
