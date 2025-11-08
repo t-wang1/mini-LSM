@@ -297,18 +297,18 @@ impl LsmStorageInner {
     }
 
     /// Get a key from the storage. In day 7, this can be further optimized by using a bloom filter.
-    pub fn get(&self, _key: &[u8]) -> Result<Option<Bytes>> {
+    pub fn get(&self, key: &[u8]) -> Result<Option<Bytes>> {
         let snapshot = {
             let guard = self.state.read();
             Arc::clone(&guard)
-        }
+        };
 
         if let Some(value) = snapshot.memtable.get(key) {
-            if value.is_empty {
-                return Ok(None)
+            if value.is_empty() {
+                return Ok(None);
             }
             return Ok(Some(value));
-        };
+        }
 
         for memtable in snapshot.imm_memtables.iter() {
             if let Some(value) = memtable.get(key) {
@@ -319,7 +319,7 @@ impl LsmStorageInner {
             };
         };
 
-        let mut l0_iter = Vec::with_capacity(snapshot.l0_sstables.len());
+        let mut l0_iters = Vec::with_capacity(snapshot.l0_sstables.len());
 
         let keep_table = |key: &[u8], table: SsTable| {
             if key_within(key, table.first_key().as_key_slice(), table.last_key().as_key_slice()) {
@@ -341,12 +341,12 @@ impl LsmStorageInner {
             }
         };
 
-        let l0_iter = MergeIterator::create(l0_iter);
+        let l0_iter = MergeIterator::create(l0_iters);
         for (_, level_sst_ids) in &snapshot.levels {
             let mut level_ssts = Vec::with_capacity(level_sst_ids.len());
-            for table in level_ssts_ids {
+            for table in level_sst_ids {
                 let table = snapshot.sstables[table].clone();
-                if keep_table = bloom(key, &table) {
+                if keep_table(key, &table) {
                     level_ssts.push(table);
                 }
             }
