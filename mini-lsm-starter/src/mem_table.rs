@@ -52,7 +52,7 @@ pub(crate) fn map_bound(bound: Bound<&[u8]>) -> Bound<Bytes> {
 
 impl MemTable {
     /// Create a new mem-table.
-    pub fn create(_id: usize) -> Self {
+    pub fn create(id: usize) -> Self {
         Self {
             id,
             map: Arc::new(SkipMap::new()),
@@ -62,7 +62,7 @@ impl MemTable {
     }
 
     /// Create a new mem-table with WAL
-    pub fn create_with_wal(_id: usize, path: impl AsRef<Path>) -> Result<Self> {
+    pub fn create_with_wal(id: usize, path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
             id,
             map: Arc::new(SkipMap::new()),
@@ -72,11 +72,11 @@ impl MemTable {
     }
 
     /// Create a memtable from WAL
-    pub fn recover_from_wal(_id: usize, path: impl AsRef<Path>) -> Result<Self> {
+    pub fn recover_from_wal(id: usize, path: impl AsRef<Path>) -> Result<Self> {
         let map = Arc::new(SkipMap::new());
         Ok(Self {
             id,
-            wal: Some(wal::recover(path.as_ref(), &map)?),
+            wal: Some(Wal::recover(path.as_ref(), &map)?),
             map: map,
             approximate_size: Arc::new(AtomicUsize::new(0)),
         })
