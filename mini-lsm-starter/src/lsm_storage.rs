@@ -316,7 +316,7 @@ impl LsmStorageInner {
                     return Ok(None);
                 }
                 return Ok(Some(value));
-            }
+            };
         };
 
         let mut l0_iter = Vec::with_capacity(snapshot.l0_sstables.len());
@@ -332,14 +332,14 @@ impl LsmStorageInner {
                 }
             }
             false
-        }
+        };
 
         for table in snapshot.l0_sstables.iter() {
             let table = snapshot.sstables[table].clone();
             if keep_table(key, &table) {
                 l0_iters.push(Box::new(SsTableIterator::create_and_seek_to_key(table, KeySlice::from_slice(key))?));
             }
-        }
+        };
 
         let l0_iter = MergeIterator::create(l0_iter);
         for (_, level_sst_ids) in &snapshot.levels {
