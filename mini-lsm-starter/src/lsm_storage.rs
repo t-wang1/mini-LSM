@@ -298,7 +298,69 @@ impl LsmStorageInner {
 
     /// Get a key from the storage. In day 7, this can be further optimized by using a bloom filter.
     pub fn get(&self, _key: &[u8]) -> Result<Option<Bytes>> {
-        unimplemented!()
+        let snapshot = {
+            let guard = self.state.read();
+            Arc::clone(&guard)
+        }
+
+        if let Some(value) = snapshot.memtable.get(key) {
+            if value.is_empty {
+                return Ok(None)
+            }
+            return Ok(Some(value));
+        }
+
+        for memtable in snapshot.imm_memtables.iter() {
+            if let Some(value) = memtable.get(key) {
+                if value.is_empty {
+                    return Ok(None);
+                }
+                return Ok(Some(value));
+            }
+        }
+
+        let mut l0_iter = Vec::with_capacity(snapshot.l0_sstables.len());
+
+        let keep_table = |key: &[u8], table: SsTable| {
+            if key_within(key, table.first_key().as_key_slice(), table.last_key().as_key_slice()) {
+                if let Some(bloom) = &table.bloom {
+                    if bloom.may_contain(farmhash::fingerprint32(key)) {
+                        return true;
+                    }
+                } else {
+                    return true;
+                }
+            }
+            false
+        }
+
+        for table in snapshot.l0_sstables.iter() {
+            let table = snapshot.sstables[table].clone();
+            if keep_table(key, &table) {
+                l0_iters.push(Box::new(SsTableIterator::create_and_seek_to_key(table, KeySlice::from_slice(key))?));
+            }
+        }
+
+        let l0_iter = MergeIterator::create(l0_iter);
+        for (_, level_sst_ids in &snapshot.levels) {
+            let mut level_ssts = Vec::with_capacity(level_sst_ids.len());
+            for table in level_ssts_ids {
+                let table = snapshot.sstables[table]clone();
+                if keep_table = bloom(key, &table) {
+                    level_ssts.push(table);
+                }
+            }
+            let level_iter = SstConcatIterator::create_and_seek_to_key(level_ssts, KeySlice::from(key))?;
+            level_iters.push(Box::new(level_iter))
+        }
+
+        let iter = TwoMergeIterator::create(l0_iter, MergeIterator::create(level_iters))?;
+
+        if iter.is_valid() && iter.key().raw_ref() == key && !iter.value().is_empty() {
+            return Ok(Some(Bytes::copy_from_slice(iter.value())));
+        }
+
+        Ok(None)
     }
 
     /// Write a batch of data into the storage. Implement in week 2 day 7.
@@ -308,12 +370,12 @@ impl LsmStorageInner {
 
     /// Put a key-value pair into the storage by writing into the current memtable.
     pub fn put(&self, _key: &[u8], _value: &[u8]) -> Result<()> {
-        unimplemented!()
+        self.write_batch(&[WriteBatchRecord::Put(key, value)]);
     }
 
     /// Remove a key from the storage by writing an empty value.
     pub fn delete(&self, _key: &[u8]) -> Result<()> {
-        unimplemented!()
+        self.write_batch(&[WriteBatchRecord::Del(key)])
     }
 
     pub(crate) fn path_of_sst_static(path: impl AsRef<Path>, id: usize) -> PathBuf {
