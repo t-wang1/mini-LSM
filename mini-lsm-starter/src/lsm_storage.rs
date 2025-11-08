@@ -42,6 +42,8 @@ use crate::mem_table::{MemTable, map_bound};
 use crate::mvcc::LsmMvccInner;
 use crate::table::{FileObject, SsTable, SsTableBuilder, SsTableIterator};
 
+use farmhash;
+
 pub type BlockCache = moka::sync::Cache<(usize, usize), Arc<Block>>;
 
 /// Represents the state of the storage engine.
@@ -84,6 +86,10 @@ impl LsmStorageState {
             sstables: Default::default(),
         }
     }
+}
+
+fn key_within(user_key: &[u8], table_begin: KeySlice, table_end: KeySlice) -> bool {
+    table_begin.raw_ref() <= user_key && user_key <= table_end.raw_ref()
 }
 
 #[derive(Debug, Clone)]
@@ -318,7 +324,7 @@ impl LsmStorageInner {
 
         for memtable in snapshot.imm_memtables.iter() {
             if let Some(value) = memtable.get(key) {
-                if value.is_empty {
+                if value.is_empty() {
                     return Ok(None);
                 }
                 return Ok(Some(value));
@@ -326,8 +332,8 @@ impl LsmStorageInner {
         }
 
         let mut l0_iters = Vec::with_capacity(snapshot.l0_sstables.len());
-
-        let keep_table = |key: &[u8], table: SsTable| {
+        let mut level_iters = Vec::with_capacity(snapshot.levels.len());
+        let keep_table = |key: &[u8], table: &SsTable| {
             if key_within(
                 key,
                 table.first_key().as_key_slice(),
@@ -364,7 +370,7 @@ impl LsmStorageInner {
                 }
             }
             let level_iter =
-                SstConcatIterator::create_and_seek_to_key(level_ssts, KeySlice::from(key))?;
+                SstConcatIterator::create_and_seek_to_key(level_ssts, KeySlice::from_slice(key))?;
             level_iters.push(Box::new(level_iter))
         }
 
@@ -383,12 +389,12 @@ impl LsmStorageInner {
     }
 
     /// Put a key-value pair into the storage by writing into the current memtable.
-    pub fn put(&self, _key: &[u8], _value: &[u8]) -> Result<()> {
+    pub fn put(&self, key: &[u8], value: &[u8]) -> Result<()> {
         self.write_batch(&[WriteBatchRecord::Put(key, value)])
     }
 
     /// Remove a key from the storage by writing an empty value.
-    pub fn delete(&self, _key: &[u8]) -> Result<()> {
+    pub fn delete(&self, key: &[u8]) -> Result<()> {
         self.write_batch(&[WriteBatchRecord::Del(key)])
     }
 

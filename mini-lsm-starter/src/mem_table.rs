@@ -54,7 +54,7 @@ impl MemTable {
     /// Create a new mem-table.
     pub fn create(_id: usize) -> Self {
         Self {
-            id: id,
+            id,
             map: Arc::new(SkipMap::new()),
             wal: None,
             approximate_size: Arc::new(AtomicUsize::new(0)),
@@ -62,9 +62,9 @@ impl MemTable {
     }
 
     /// Create a new mem-table with WAL
-    pub fn create_with_wal(_id: usize, _path: impl AsRef<Path>) -> Result<Self> {
+    pub fn create_with_wal(_id: usize, path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
-            id: id,
+            id,
             map: Arc::new(SkipMap::new()),
             wal: Some(Wal::create(path.as_ref())?),
             approximate_size: Arc::new(AtomicUsize::new(0)),
@@ -72,10 +72,10 @@ impl MemTable {
     }
 
     /// Create a memtable from WAL
-    pub fn recover_from_wal(_id: usize, _path: impl AsRef<Path>) -> Result<Self> {
+    pub fn recover_from_wal(_id: usize, path: impl AsRef<Path>) -> Result<Self> {
         let map = Arc::new(SkipMap::new());
-        Ok(self {
-            id: id,
+        Ok(Self {
+            id,
             wal: Some(wal::recover(path.as_ref(), &map)?),
             map: map,
             approximate_size: Arc::new(AtomicUsize::new(0)),
@@ -102,7 +102,7 @@ impl MemTable {
     }
 
     /// Get a value by key.
-    pub fn get(&self, _key: &[u8]) -> Option<Bytes> {
+    pub fn get(&self, key: &[u8]) -> Option<Bytes> {
         self.map.get(key).map(|e| e.value().clone())
     }
 
@@ -111,7 +111,7 @@ impl MemTable {
     /// In week 1, day 1, simply put the key-value pair into the skipmap.
     /// In week 2, day 6, also flush the data to WAL.
     /// In week 3, day 5, modify the function to use the batch API.
-    pub fn put(&self, _key: &[u8], _value: &[u8]) -> Result<()> {
+    pub fn put(&self, key: &[u8], value: &[u8]) -> Result<()> {
         self.map
             .insert(Bytes::copy_from_slice(key), Bytes::copy_from_slice(value));
         self.approximate_size.fetch_add(
@@ -122,7 +122,7 @@ impl MemTable {
             let wal = self.wal.as_ref().unwrap();
             wal.put(key, value)?;
         }
-        Ok()
+        Ok(())
     }
 
     /// Implement this in week 3, day 5; if you want to implement this earlier, use `&[u8]` as the key type.
@@ -138,7 +138,7 @@ impl MemTable {
     }
 
     /// Get an iterator over a range of keys.
-    pub fn scan(&self, _lower: Bound<&[u8]>, _upper: Bound<&[u8]>) -> MemTableIterator {
+    pub fn scan(&self, lower: Bound<&[u8]>, upper: Bound<&[u8]>) -> MemTableIterator {
         let (lower, upper) = (map_bound(lower), map_bound(upper));
         let mut iter = MemTableIteratorBuilder {
             map: self.map.clone(),
