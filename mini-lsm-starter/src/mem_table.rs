@@ -54,20 +54,20 @@ impl MemTable {
     /// Create a new mem-table.
     pub fn create(_id: usize) -> Self {
         Self {
-            id: id, 
+            id: id,
             map: Arc::new(SkipMap::new()),
             wal: None,
-            approximate_size: Arc::new(AtomicUsize::new(0))
+            approximate_size: Arc::new(AtomicUsize::new(0)),
         }
     }
 
     /// Create a new mem-table with WAL
     pub fn create_with_wal(_id: usize, _path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
-            id: id, 
+            id: id,
             map: Arc::new(SkipMap::new()),
-            wal: Some(Wal::create(path.as_ref())?), 
-            approximate_size: Arc::new(AtomicUsize::new(0))
+            wal: Some(Wal::create(path.as_ref())?),
+            approximate_size: Arc::new(AtomicUsize::new(0)),
         })
     }
 
@@ -75,10 +75,10 @@ impl MemTable {
     pub fn recover_from_wal(_id: usize, _path: impl AsRef<Path>) -> Result<Self> {
         let map = Arc::new(SkipMap::new());
         Ok(self {
-            id: id, 
+            id: id,
             wal: Some(wal::recover(path.as_ref(), &map)?),
-            map: map, 
-            approximate_size: Arc::new(AtomicUsize::new(0))
+            map: map,
+            approximate_size: Arc::new(AtomicUsize::new(0)),
         })
     }
 
@@ -141,9 +141,9 @@ impl MemTable {
     pub fn scan(&self, _lower: Bound<&[u8]>, _upper: Bound<&[u8]>) -> MemTableIterator {
         let (lower, upper) = (map_bound(lower), map_bound(upper));
         let mut iter = MemTableIteratorBuilder {
-            map: self.map.clone(), 
-            iter_builder: |map| map.range((lower, upper)), 
-            item: ((Bytes::new()), Bytes::new())
+            map: self.map.clone(),
+            iter_builder: |map| map.range((lower, upper)),
+            item: ((Bytes::new()), Bytes::new()),
         }
         .build();
         iter.next().unwrap();

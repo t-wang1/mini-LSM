@@ -317,12 +317,16 @@ impl LsmStorageInner {
                 }
                 return Ok(Some(value));
             };
-        };
+        }
 
         let mut l0_iters = Vec::with_capacity(snapshot.l0_sstables.len());
 
         let keep_table = |key: &[u8], table: SsTable| {
-            if key_within(key, table.first_key().as_key_slice(), table.last_key().as_key_slice()) {
+            if key_within(
+                key,
+                table.first_key().as_key_slice(),
+                table.last_key().as_key_slice(),
+            ) {
                 if let Some(bloom) = &table.bloom {
                     if bloom.may_contain(farmhash::fingerprint32(key)) {
                         return true;
@@ -337,9 +341,12 @@ impl LsmStorageInner {
         for table in snapshot.l0_sstables.iter() {
             let table = snapshot.sstables[table].clone();
             if keep_table(key, &table) {
-                l0_iters.push(Box::new(SsTableIterator::create_and_seek_to_key(table, KeySlice::from_slice(key))?));
+                l0_iters.push(Box::new(SsTableIterator::create_and_seek_to_key(
+                    table,
+                    KeySlice::from_slice(key),
+                )?));
             }
-        };
+        }
 
         let l0_iter = MergeIterator::create(l0_iters);
         for (_, level_sst_ids) in &snapshot.levels {
@@ -350,7 +357,8 @@ impl LsmStorageInner {
                     level_ssts.push(table);
                 }
             }
-            let level_iter = SstConcatIterator::create_and_seek_to_key(level_ssts, KeySlice::from(key))?;
+            let level_iter =
+                SstConcatIterator::create_and_seek_to_key(level_ssts, KeySlice::from(key))?;
             level_iters.push(Box::new(level_iter))
         }
 
