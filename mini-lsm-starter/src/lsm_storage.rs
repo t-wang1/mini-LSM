@@ -436,7 +436,8 @@ impl LsmStorageInner {
             state_lock_observer,
             ManifestRecord::NewMemtable(memtable_id),
         )?;
-        self.sync_dir()?
+        self.sync_dir()?;
+        
         Ok(())
     }
 
