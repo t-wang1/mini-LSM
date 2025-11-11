@@ -12,6 +12,9 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
+      - name: Ensure bash is installed
+        shell: sh
+        run: sudo apt-get update && sudo apt-get install -y bash
       - uses: actions/checkout@v2
       - name: setup rust toolchain
         run: rustup update && rustup toolchain install
@@ -21,23 +24,9 @@ jobs:
         run: mv mini-lsm-book/theme/head.hbs._ mini-lsm-book/theme/head.hbs
       - name: check and build
         run: cargo x ci
-      - name: Ensure bash is installed 
-        shell: sh
-        run: |
-          if [ -f /etc/alpine-release ]; then
-            echo "Alpine detected, installing bash"
-            apk --no-cache add bash || true
-          elif [ -f /etc/debian_version ]; then
-            echo "Debian/Ubuntu detected, installing bash"
-            sudo apt-get update
-            sudo apt-get install -y bash || true
-          else
-            echo "Unknown base image; attempting to continue"
-          fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: mini-lsm-book/book
-
   deploy:
     needs: build
     permissions:
