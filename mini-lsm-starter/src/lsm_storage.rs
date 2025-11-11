@@ -424,7 +424,7 @@ impl LsmStorageInner {
         let memtable = if self.options.enable_wal() {
             Arc::new(MemTable::create_with_wal(
                 memtable_id,
-                self.path_of_wal(memtable_id),  
+                self.path_of_wal(memtable_id),
             )?)
         } else {
             Arc::new(MemTable::create(memtable_id))
@@ -437,7 +437,7 @@ impl LsmStorageInner {
             ManifestRecord::NewMemtable(memtable_id),
         )?;
         self.sync_dir()?;
-        
+
         Ok(())
     }
 
