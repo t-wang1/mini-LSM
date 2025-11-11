@@ -418,7 +418,7 @@ impl LsmStorageInner {
         unimplemented!()
     }
 
-    fn freeze_memtable_with_memtable(&self, &memtable) {
+    fn freeze_memtable_with_memtable(&self, memtable: Arc<MemTable>) -> Result<()> {
         let mut guard = self.state.write();
         let mut snapshot = self.as_ref().clone();
         let old_memtable = std::mem::replace(&mut snapshot.memtable, memtable);
