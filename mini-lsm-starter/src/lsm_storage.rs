@@ -418,10 +418,21 @@ impl LsmStorageInner {
         unimplemented!()
     }
 
+    fn freeze_memtable_with_memtable(&self, &memtable) {
+        let mut guard = self.state.write();
+        let mut snapshot = self.as_ref().clone();
+        let old_memtable = std::mem::replace(&mut snapshot.memtable, memtable);
+        snapshot.imm_memtables.insert(0, old_memtable.clone());
+        *guard = Arc::new(snapshot);
+        drop(guard);
+        old_memtable.sync_dir()?;
+        Ok(())
+    }
+
     /// Force freeze the current memtable to an immutable memtable
-    pub fn force_freeze_memtable(&self, _state_lock_observer: &MutexGuard<'_, ()>) -> Result<()> {
+    pub fn force_freeze_memtable(&self, state_lock_observer: &MutexGuard<'_, ()>) -> Result<()> {
         let memtable_id = self.next_sst_id();
-        let memtable = if self.options.enable_wal() {
+        let memtable = if self.options.enable_wal {
             Arc::new(MemTable::create_with_wal(
                 memtable_id,
                 self.path_of_wal(memtable_id),
