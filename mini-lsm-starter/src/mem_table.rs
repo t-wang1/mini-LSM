@@ -193,18 +193,21 @@ impl StorageIterator for MemTableIterator {
     type KeyType<'a> = KeySlice<'a>;
 
     fn value(&self) -> &[u8] {
-        unimplemented!()
+        &self.borrow_item().1[..]
     }
 
     fn key(&self) -> KeySlice {
-        unimplemented!()
+        KeySlice::from_slice(&self.borrow_item().0[..])
     }
 
+    
     fn is_valid(&self) -> bool {
-        unimplemented!()
+        !&self.borrow_item().0.is_empty()
     }
 
     fn next(&mut self) -> Result<()> {
-        unimplemented!()
+        let entry = self.with_iter_mut(|iter| MemTableiterator::entry_to_item(iter.next()));
+        self.with_mut(|x| *x.item = entry);
+        Ok(())
     }
 }
