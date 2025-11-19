@@ -69,7 +69,7 @@ impl<I: StorageIterator> MergeIterator<I> {
         let mut heap = BinaryHeap::new();
 
         if iters.iter().all(|x| !x.is_valid()) {
-            let mut iters = iters
+            let mut iters = iters;
             return Self {
                 iters: heap, 
                 current: Some(HeapWrapper(0, iters.pop().unwrap()))
