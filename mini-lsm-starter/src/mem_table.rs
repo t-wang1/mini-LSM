@@ -200,7 +200,6 @@ impl StorageIterator for MemTableIterator {
         KeySlice::from_slice(&self.borrow_item().0[..])
     }
 
-    
     fn is_valid(&self) -> bool {
         !&self.borrow_item().0.is_empty()
     }

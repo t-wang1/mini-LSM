@@ -71,8 +71,8 @@ impl<I: StorageIterator> MergeIterator<I> {
         if iters.iter().all(|x| !x.is_valid()) {
             let mut iters = iters;
             return Self {
-                iters: heap, 
-                current: Some(HeapWrapper(0, iters.pop().unwrap()))
+                iters: heap,
+                current: Some(HeapWrapper(0, iters.pop().unwrap())),
             };
         }
 
@@ -88,8 +88,6 @@ impl<I: StorageIterator> MergeIterator<I> {
             iters: heap,
             current: current,
         };
-
-
     }
 }
 
