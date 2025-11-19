@@ -15,8 +15,8 @@
 #![allow(unused_variables)] // TODO(you): remove this lint after implementing this mod
 #![allow(dead_code)] // TODO(you): remove this lint after implementing this mod
 
-use anyhow::Result;
 use anyhow::Bail;
+use anyhow::Result;
 
 use crate::{
     iterators::{StorageIterator, merge_iterator::MergeIterator},

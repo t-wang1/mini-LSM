@@ -497,7 +497,10 @@ impl LsmStorageInner {
                         SsTableIterator::create_and_seek_to_key(table, KeySlice::from_slice(key))?
                     }
                     Bound::Excluded(key) => {
-                        let mut iter = SsTableIterator::create_and_seek_to_key(table, KeySlice::from_slice(key))?;
+                        let mut iter = SsTableIterator::create_and_seek_to_key(
+                            table,
+                            KeySlice::from_slice(key),
+                        )?;
                         if iter.is_valid() && iter.key().raw_ref() == key {
                             iter.next()?;
                         }
