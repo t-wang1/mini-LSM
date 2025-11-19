@@ -205,7 +205,7 @@ impl StorageIterator for MemTableIterator {
     }
 
     fn next(&mut self) -> Result<()> {
-        let entry = self.with_iter_mut(|iter| MemTableiterator::entry_to_item(iter.next()));
+        let entry = self.with_iter_mut(|iter| MemTableIterator::entry_to_item(iter.next()));
         self.with_mut(|x| *x.item = entry);
         Ok(())
     }

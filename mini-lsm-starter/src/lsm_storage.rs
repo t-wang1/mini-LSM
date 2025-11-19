@@ -140,6 +140,33 @@ impl LsmStorageOptions {
     }
 }
 
+fn range_overlap(
+    user_begin: Bound<&[u8]>,
+    user_end: Bound<&[u8]>,
+    table_begin: KeySlice,
+    table_end: KeySlice,
+) -> bool {
+    match user_end {
+        Bound::Excluded(key) if key <= table_begin.raw_ref() => {
+            return false;
+        }
+        Bound::Included(key) if key < table_begin.raw_ref() => {
+            return false;
+        }
+        _ => {}
+    }
+    match user_begin {
+        Bound::Excluded(key) if key >= table_end.raw_ref() => {
+            return false;
+        }
+        Bound::Included(key) if key > table_end.raw_ref() => {
+            return false;
+        }
+        _ => {}
+    }
+    true
+}
+
 #[derive(Clone, Debug)]
 pub enum CompactionFilter {
     Prefix(Bytes),
@@ -519,7 +546,7 @@ impl LsmStorageInner {
             let mut level_ssts = Vec::with_capacity(level_sst_ids.len());
             for table in level_sst_ids {
                 let table = snapshot.sstables[table].clone();
-                if overlap(
+                if range_overlap(
                     lower,
                     upper,
                     table.first_key().as_key_slice(),
@@ -543,15 +570,15 @@ impl LsmStorageInner {
                 Bound::Unbounded => SstConcatIterator::create_and_seek_to_first(level_ssts)?,
             };
             level_iters.push(Box::new(level_iter));
-
-            /// merge everything together
-            let iter = TwoMergeIterator::create(memtable_iter, l0_iter)?;
-            let iter = TwoMergeIterator::create(iter, MergeIterator::create(level_iters))?;
-
-            Ok(FusedIterator::new(LsmIterator::new(
-                iter,
-                map_bound(upper),
-            )?))
         }
+
+        /// merge everything together
+        let iter = TwoMergeIterator::create(memtable_iter, l0_iter)?;
+        let iter = TwoMergeIterator::create(iter, MergeIterator::create(level_iters))?;
+
+        Ok(FusedIterator::new(LsmIterator::new(
+            iter,
+            map_bound(upper),
+        )?))
     }
 }

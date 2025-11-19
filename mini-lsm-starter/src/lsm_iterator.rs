@@ -32,7 +32,34 @@ pub struct LsmIterator {
 
 impl LsmIterator {
     pub(crate) fn new(iter: LsmIteratorInner) -> Result<Self> {
-        Ok(Self { inner: iter })
+        let mut iter = Self {
+            is_valid: iter.is_valid(),
+            inner: iter,
+            end_bound,
+        };
+        iter.move_to_non_delete()?;
+        Ok(iter)
+    }
+
+    fn next_inner(&mut self) -> Result<()> {
+        self.inner.next()?;
+        if !self.inner.is_valid() {
+            self.is_valid = false;
+            return Ok(());
+        }
+        match self.end_bound.as_ref() {
+            Bound::Unbounded => {}
+            Bound::Included(key) => self.is_valid = self.inner.key().raw_ref() <= key.as_ref(),
+            Bound::Excluded(key) => self.is_valid = self.inner.key().raw_ref() < key.as_ref(),
+        }
+        Ok(())
+    }
+
+    fn move_to_non_delete(&mut self) -> Result<()> {
+        while self.is_valid() && self.inner.value().is_empty() {
+            iter.next()?;
+        }
+        Ok(())
     }
 }
 
@@ -40,7 +67,7 @@ impl StorageIterator for LsmIterator {
     type KeyType<'a> = &'a [u8];
 
     fn is_valid(&self) -> bool {
-        self.is_valid
+        self.is_valid()
     }
 
     fn key(&self) -> &[u8] {
@@ -85,7 +112,7 @@ impl<I: StorageIterator> StorageIterator for FusedIterator<I> {
         if self.has_errored {
             return false;
         }
-        self.iter.is_valid();
+        self.iter.is_valid()
     }
 
     fn key(&self) -> Self::KeyType<'_> {
