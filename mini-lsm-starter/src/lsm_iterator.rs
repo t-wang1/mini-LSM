@@ -16,6 +16,7 @@
 #![allow(dead_code)] // TODO(you): remove this lint after implementing this mod
 
 use anyhow::Result;
+use anyhow::Bail;
 
 use crate::{
     iterators::{StorageIterator, merge_iterator::MergeIterator},

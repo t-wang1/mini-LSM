@@ -476,6 +476,7 @@ impl LsmStorageInner {
 
         /// collect memtable iterators
         let mut memtable_iters = Vec::with_capacity(snapshot.imm_memtables.len() + 1);
+        memtable_iters.push(Box::new(snapshot.memtable.scan(lower, upper)));
         for memtable in snapshot.imm_memtables.iter() {
             memtable_iters.push(Box::new(memtable.scan(lower, upper)));
         }
@@ -496,7 +497,7 @@ impl LsmStorageInner {
                         SsTableIterator::create_and_seek_to_key(table, KeySlice::from_slice(key))?
                     }
                     Bound::Excluded(key) => {
-                        SsTableIterator::create_and_seek_to_key(table, KeySlice::from_slice(key))?;
+                        let mut iter = SsTableIterator::create_and_seek_to_key(table, KeySlice::from_slice(key))?;
                         if iter.is_valid() && iter.key().raw_ref() == key {
                             iter.next()?;
                         }
