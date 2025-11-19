@@ -15,8 +15,8 @@
 #![allow(unused_variables)] // TODO(you): remove this lint after implementing this mod
 #![allow(dead_code)] // TODO(you): remove this lint after implementing this mod
 
-use anyhow::Bail;
 use anyhow::Result;
+use anyhow::bail;
 
 use crate::{
     iterators::{StorageIterator, merge_iterator::MergeIterator},
@@ -28,10 +28,12 @@ type LsmIteratorInner = MergeIterator<MemTableIterator>;
 
 pub struct LsmIterator {
     inner: LsmIteratorInner,
+    end_bound: Bound<Bytes>,
+    is_valid: bool,
 }
 
 impl LsmIterator {
-    pub(crate) fn new(iter: LsmIteratorInner) -> Result<Self> {
+    pub(crate) fn new(iter: LsmIteratorInner, end_bound: Bound<Bytes>) -> Result<Self> {
         let mut iter = Self {
             is_valid: iter.is_valid(),
             inner: iter,
@@ -57,7 +59,7 @@ impl LsmIterator {
 
     fn move_to_non_delete(&mut self) -> Result<()> {
         while self.is_valid() && self.inner.value().is_empty() {
-            iter.next()?;
+            self.next_inner()?;
         }
         Ok(())
     }

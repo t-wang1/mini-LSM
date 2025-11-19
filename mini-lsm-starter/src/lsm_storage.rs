@@ -557,11 +557,15 @@ impl LsmStorageInner {
             }
 
             let level_iter = match lower {
-                Bound::Included(key) => {
-                    SstConcatIterator::create_and_seek_to_key(level_ssts, KeySlice::from(key))?
-                }
+                Bound::Included(key) => SstConcatIterator::create_and_seek_to_key(
+                    level_ssts,
+                    KeySlice::from_slice(key),
+                )?,
                 Bound::Excluded(key) => {
-                    SstConcatIterator::create_and_seek_to_key(level_ssts, KeySlice::from(key))?;
+                    let mut iter = SstConcatIterator::create_and_seek_to_key(
+                        level_ssts,
+                        KeySlice::from_slice(key),
+                    )?;
                     if iter.is_valid() && iter.key().raw_ref() == key {
                         iter.next()?;
                     }
