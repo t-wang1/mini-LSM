@@ -471,7 +471,7 @@ impl LsmStorageInner {
 
         /// get a snapshot of the state
         let snapshot = {
-            let guard = self.state.read(), 
+            let guard = self.state.read(); 
             Arc::clone(&guard)
         };
 
@@ -499,9 +499,8 @@ impl LsmStorageInner {
                         iter
                     }
                     Bound::Unbounded => SsTableIterator::create_and_seek_to_first(table)?,
-                    
-                    table_iters.push(Box::new(iter));
-                }
+                };
+                table_iters.push(Box::new(iter));
             }
         }
         let l0_iter = MergeIterator::create(table_iters);
@@ -518,9 +517,7 @@ impl LsmStorageInner {
             }
 
             let level_iter = match lower {
-                Bound::Included(key) => {
-                    SstConcatIterator::create_and_seek_to_key(level_ssts, KeySlice::from(key))?,
-                }
+                Bound::Included(key) => SstConcatIterator::create_and_seek_to_key(level_ssts, KeySlice::from(key))?,
                 Bound::Excluded(key) => {
                     SstConcatIterator::create_and_seek_to_key(level_ssts, KeySlice::from(key))?;
                     if iter.is_valid() && iter.key().raw_ref() == key {
