@@ -59,7 +59,37 @@ pub struct MergeIterator<I: StorageIterator> {
 
 impl<I: StorageIterator> MergeIterator<I> {
     pub fn create(iters: Vec<Box<I>>) -> Self {
-        unimplemented!()
+        if iters.is_empty() {
+            return Self {
+                iters: BinaryHeap::new(),
+                current: None,
+            };
+        }
+
+        let mut heap = BinaryHeap::new();
+
+        if iters.iter().all(|x| !x.is_valid()) {
+            let mut iters = iters
+            return Self {
+                iters: heap, 
+                current: Some(HeapWrapper(0, iters.pop().unwrap()))
+            };
+        }
+
+        /// pushes valid iterators into the heap which automatically maintains min heap property
+        for (idx, iter) in iters.into_iter().enumerate() {
+            if iter.is_valid() {
+                heap.push(HeapWrapper(idx, iter));
+            }
+        }
+
+        let current = heap.pop().unwrap();
+        Self {
+            iters: heap,
+            current: current,
+        };
+
+
     }
 }
 
