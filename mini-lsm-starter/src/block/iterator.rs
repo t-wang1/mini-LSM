@@ -26,8 +26,6 @@ use crate::{
 
 use super::Block;
 
-const SIZEOF_U16: usize = std::mem::size_of::<u16>();
-
 /// Iterates on a block.
 pub struct BlockIterator {
     /// The internal `Block`, wrapped by an `Arc`
@@ -73,7 +71,7 @@ impl BlockIterator {
     /// Creates a block iterator and seek to the first key that >= `key`.
     pub fn create_and_seek_to_key(block: Arc<Block>, key: KeySlice) -> Self {
         let mut iter = Self::new(block);
-        iter.seek_to_key();
+        iter.seek_to_key(key);
         iter
     }
 
