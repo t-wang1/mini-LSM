@@ -17,9 +17,16 @@
 
 use std::sync::Arc;
 
-use crate::key::{KeySlice, KeyVec};
+use bytes::Buf;
+
+use crate::{
+    block::SIZEOF_U16,
+    key::{KeySlice, KeyVec},
+};
 
 use super::Block;
+
+const SIZEOF_U16: usize = std::mem::size_of::<u16>();
 
 /// Iterates on a block.
 pub struct BlockIterator {
@@ -79,9 +86,9 @@ impl BlockIterator {
     /// Returns the value of the current entry.
     pub fn value(&self) -> &[u8] {
         debug_assert!(!self.key.is_empty(), "invalid iterator");
-        start_pos = self.value_range.0;
-        end_pos = self.value_range.1;
-        &block.data[start_pos..end_pos]
+        let start_pos = self.value_range.0;
+        let end_pos = self.value_range.1;
+        &self.block.data[start_pos..end_pos]
     }
 
     /// Returns true if the iterator is valid.
@@ -98,11 +105,11 @@ impl BlockIterator {
     fn seek_to(&mut self, idx: usize) {
         if idx > self.block.offsets.len() {
             self.key.clear();
-            self.value_range() = (0, 0);
+            self.value_range = (0, 0);
             return;
         }
         let offset = self.block.offsets[idx] as usize;
-        self.seek_to_offseT(offset);
+        self.seek_to_offset(offset);
         self.idx = idx;
     }
 
@@ -124,7 +131,7 @@ impl BlockIterator {
         let value_len = entry.get_u16() as usize;
         let value_offset_begin = offset + SIZEOF_U16 + SIZEOF_U16 + key_len + SIZEOF_U16;
         let value_offset_end = value_offset_begin + value_len;
-        self.value_range(value_offset_begin, value_offset_end);
+        self.value_range = (value_offset_begin, value_offset_end);
         entry.advance(value_len);
     }
 
