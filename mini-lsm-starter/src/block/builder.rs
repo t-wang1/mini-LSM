@@ -15,8 +15,8 @@
 #![allow(unused_variables)] // TODO(you): remove this lint after implementing this mod
 #![allow(dead_code)] // TODO(you): remove this lint after implementing this mod
 
-use bytes::BufMut;
 use crate::key::{KeySlice, KeyVec};
+use bytes::BufMut;
 
 use super::Block;
 
