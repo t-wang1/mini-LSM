@@ -15,9 +15,12 @@
 #![allow(unused_variables)] // TODO(you): remove this lint after implementing this mod
 #![allow(dead_code)] // TODO(you): remove this lint after implementing this mod
 
+use bytes::BufMut;
 use crate::key::{KeySlice, KeyVec};
 
 use super::Block;
+
+const SIZEOF_U16: usize = std::mem::size_of::<u16>();
 
 /// Builds a block.
 pub struct BlockBuilder {
