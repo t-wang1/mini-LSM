@@ -30,8 +30,8 @@ use crate::lsm_storage::BlockCache;
 /// Builds an SSTable from key-value pairs.
 pub struct SsTableBuilder {
     builder: BlockBuilder,
-    first_key: Vec<u8>,
-    last_key: Vec<u8>,
+    first_key: KeyVec,
+    last_key: KeyVec,
     data: Vec<u8>,
     pub(crate) meta: Vec<BlockMeta>,
     block_size: usize,
@@ -106,8 +106,8 @@ impl SsTableBuilder {
         self.finish_block();
         let mut buf = self.data;
         let meta_offset = buf.len();
-        BlockMeta::encode_block_meta(&self.meta, &self.buf);
-        buf.put_f32(meta_offset as u32);
+        BlockMeta::encode_block_meta(&self.meta, &buf);
+        buf.put_u32(meta_offset as u32);
         let bloom = Bloom::build_from_key_hashes(
             &self.key_hashes,
             Bloom::bloom_bits_per_key(self.key_hashes.len(), 0.01),
