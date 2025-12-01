@@ -93,7 +93,7 @@ impl SsTableBuilder {
         });
         let checksum = crc32fast::hash(&encoded_block);
         self.data.extend(encoded_block);
-        self.data.put_f32(checksum);
+        self.data.put_u32(checksum);
     }
 
     /// Builds the SSTable and writes it to the given path. Use the `FileObject` structure to manipulate the disk objects.
@@ -106,7 +106,7 @@ impl SsTableBuilder {
         self.finish_block();
         let mut buf = self.data;
         let meta_offset = buf.len();
-        BlockMeta::encode_block_meta(&self.meta, &buf);
+        BlockMeta::encode_block_meta(&self.meta, &mut buf);
         buf.put_u32(meta_offset as u32);
         let bloom = Bloom::build_from_key_hashes(
             &self.key_hashes,

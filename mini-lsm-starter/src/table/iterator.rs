@@ -86,7 +86,7 @@ impl SsTableIterator {
     /// Note: You probably want to review the handout for detailed explanation when implementing
     /// this function.
     pub fn seek_to_key(&mut self, key: KeySlice) -> Result<()> {
-        let (blk_idx, blk_iter) = Self::seek_to_first_inner(self.table, key)?;
+        let (blk_idx, blk_iter) = Self::seek_to_key_inner(self.table, key)?;
         self.blk_iter = blk_iter;
         self.blk_idx = blk_idx;
         Ok(())
