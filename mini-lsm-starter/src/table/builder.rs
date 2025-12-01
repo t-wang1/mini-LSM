@@ -19,9 +19,13 @@ use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::Result;
+use bytes::BufMut;
 
-use super::{BlockMeta, SsTable};
-use crate::{block::BlockBuilder, key::KeySlice, lsm_storage::BlockCache};
+use super::bloom::Bloom;
+use super::{BlockMeta, FileObject, SsTable};
+use crate::block::BlockBuilder;
+use crate::key::{KeySlice, KeyVec};
+use crate::lsm_storage::BlockCache;
 
 /// Builds an SSTable from key-value pairs.
 pub struct SsTableBuilder {
@@ -89,7 +93,7 @@ impl SsTableBuilder {
         });
         let checksum = crc32fast::hash(&encoded_block);
         self.data.extend(encoded_block);
-        self.data.put_32(checksum);
+        self.data.put_f32(checksum);
     }
 
     /// Builds the SSTable and writes it to the given path. Use the `FileObject` structure to manipulate the disk objects.
@@ -103,7 +107,7 @@ impl SsTableBuilder {
         let mut buf = self.data;
         let meta_offset = buf.len();
         BlockMeta::encode_block_meta(&self.meta, &self.buf);
-        buf.put_32(meta_offset as u32);
+        buf.put_f32(meta_offset as u32);
         let bloom = Bloom::build_from_key_hashes(
             &self.key_hashes,
             Bloom::bloom_bits_per_key(self.key_hashes.len(), 0.01),

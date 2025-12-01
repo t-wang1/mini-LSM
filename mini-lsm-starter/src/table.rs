@@ -23,9 +23,9 @@ use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Result, anyhow, bail};
 pub use builder::SsTableBuilder;
-use bytes::Buf;
+use bytes::{Buf, BufMut};
 pub use iterator::SsTableIterator;
 
 use crate::block::Block;
@@ -179,7 +179,6 @@ impl SsTable {
         } else {
             self.read_block(block_idx)
         }
-        read_block()
     }
 
     /// Find the block that may contain `key`.
@@ -190,7 +189,7 @@ impl SsTable {
         for (idx, meta) in self.block_meta.iter().enumerate() {
             if meta.first_key.as_key_slice() > key {
                 if idx > 0 {
-                    return idx -= 1;
+                    return idx - 1;
                 } else {
                     break;
                 }
