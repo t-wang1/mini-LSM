@@ -147,19 +147,57 @@ impl SsTable {
 
     /// Read a block from the disk.
     pub fn read_block(&self, block_idx: usize) -> Result<Arc<Block>> {
-        unimplemented!()
+        // offset tells you where this block starts in file
+        let blk_offset = self.block_meta[block_idx].offset;
+        let next_blk_offset = self
+            .block_meta
+            .get(block_idx + 1)
+            .map_or(self.block_meta_offset, |x| x.offset);
+        // determine how many bytes need to be read
+        let blk_len = next_blk_offset - blk_offset - 4;
+        // read raw bytes from file
+        let blk_data_with_chksum: Vec<u8> = self
+            .file
+            .read(blk_offset as u64, (next_blk_offset - blk_offset) as u64)?;
+        let blk_data = &blk_data_with_chksum[..blk_len];
+        let checksum = (&blk_data_with_chksum[blk_len..]).get_u32();
+        if checksum != crc32fast::hash(blk_data) {
+            bail!("block checksum mismatched");
+        }
+        // decode the bytes into a block, wrap, and return
+        Ok(Arc::new(Block::decode(blk_data)))
     }
 
     /// Read a block from disk, with block cache. (Day 4)
     pub fn read_block_cached(&self, block_idx: usize) -> Result<Arc<Block>> {
-        unimplemented!()
+        if let Some(ref block_cache) = self.block_cache {
+            let blk = block_cache
+                // core caching logic - if key exists in cache return; if not call read_block and store result in cache
+                .try_get_with((self.id, block_idx), || self.read_block(block_idx))
+                .map_err(|e| anyhow!("{}", e))?;
+            Ok(blk)
+        } else {
+            self.read_block(block_idx)
+        }
+        read_block()
     }
 
     /// Find the block that may contain `key`.
     /// Note: You may want to make use of the `first_key` stored in `BlockMeta`.
     /// You may also assume the key-value pairs stored in each consecutive block are sorted.
     pub fn find_block_idx(&self, key: KeySlice) -> usize {
-        unimplemented!()
+        let mut blk_idx = 0;
+        for (idx, meta) in self.block_meta.iter().enumerate() {
+            if meta.first_key.as_key_slice() > key {
+                if idx > 0 {
+                    return idx -= 1;
+                } else {
+                    break;
+                }
+            }
+            blk_idx = idx;
+        }
+        blk_idx
     }
 
     /// Get number of data blocks.
