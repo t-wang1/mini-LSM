@@ -75,21 +75,21 @@ impl<
 
     fn key(&self) -> Self::KeyType<'_> {
         if self.choose_a {
-            return a.key();
+            return self.a.key();
         }
-        b.key()
+        self.b.key()
     }
 
     fn value(&self) -> &[u8] {
         if self.choose_a {
-            return a.value();
+            return self.a.value();
         }
-        b.value();
+        self.b.value();
     }
 
     fn is_valid(&self) -> bool {
-        if a.is_valid() || b.is_valid() {
-            return True;
+        if self.a.is_valid() || self.b.is_valid() {
+            return true;
         }
         false
     }

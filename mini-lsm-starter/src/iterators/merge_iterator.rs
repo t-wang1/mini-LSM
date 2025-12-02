@@ -76,7 +76,7 @@ impl<I: StorageIterator> MergeIterator<I> {
             };
         }
 
-        /// pushes valid iterators into the heap which automatically maintains min heap property
+        // pushes valid iterators into the heap which automatically maintains min heap property
         for (idx, iter) in iters.into_iter().enumerate() {
             if iter.is_valid() {
                 heap.push(HeapWrapper(idx, iter));

@@ -208,7 +208,47 @@ impl Drop for MiniLsm {
 
 impl MiniLsm {
     pub fn close(&self) -> Result<()> {
-        unimplemented!()
+        self.inner.sync_dir()?;
+        // send shutdown signal to compaction thread (merges SSTable)
+        self.compaction_notifier.send(()).ok();
+        // send shutdown signal to flush thread (writes memtable to disk)
+        self.flush_notifier.send(()).ok();
+
+        let mut compaction_thread = self.compaction_thread.lock();
+        if let Some(compaction_thread) = compaction_thread.take() {
+            compaction_thread
+                .join()
+                .map_err(|e| anyhow::anyhow!("{:?}", e))?;
+        }
+        let mut flush_thread = self.flush_thread.lock();
+        if let Some(flush_thread) = flush_thread.take() {
+            flush_thread
+                .join()
+                .map_err(|e| anyhow::anyhow!("{:?}", e))?;
+        }
+        if self.inner.options.enable_wal {
+            self.inner.sync()?;
+            self.inner.sync_dir()?;
+            return Ok(());
+        }
+
+        // create memtable and skip updating manifest
+        if !self.inner.state.read().memtable.is_empty() {
+            self.inner
+                .freeze_memtable_with_memtable(Arc::new(MemTable::create(
+                    self.inner.next_sst_id(),
+                )))?;
+        }
+
+        while {
+            let snapshot = self.inner.state.read();
+            !snapshot.imm_memtables.is_empty()
+        } {
+            self.inner.force_flush_next_imm_memtable()?;
+        }
+        self.inner.sync_dir()?;
+
+        Ok(())
     }
 
     /// Start the storage engine by either loading an existing directory or creating a new one if the directory does
@@ -442,7 +482,8 @@ impl LsmStorageInner {
     }
 
     pub(super) fn sync_dir(&self) -> Result<()> {
-        unimplemented!()
+        File::open(&self.path)?.sync_all()?;
+        Ok(())
     }
 
     fn freeze_memtable_with_memtable(&self, memtable: Arc<MemTable>) -> Result<()> {
@@ -481,7 +522,62 @@ impl LsmStorageInner {
 
     /// Force flush the earliest-created immutable memtable to disk
     pub fn force_flush_next_imm_memtable(&self) -> Result<()> {
-        unimplemented!()
+        let state_lock = self.state_lock.lock();
+        let flush_memtable;
+        {
+            let guard = self.state.read();
+            flush_memtable = guard
+                .imm_memtables
+                .last()
+                .expect("no imm memtables")
+                .clone();
+        }
+
+        let mut builder = SsTableBuilder::new(self.options.block_size);
+        flush_memtable.flush(&mut builder)?;
+        let sst_id = flush_memtable.id();
+        let sst = Arc::new(builder.build(
+            sst_id,
+            Some(self.block.cache.clone()),
+            self.path_of_sst(sst_id),
+        )?);
+
+        {
+            // acquire write lock
+            let mut guard = self.state.write();
+            // creates a new copy of the entire state to modify
+            // old state remains unchanged so readers using the old state are unaffected
+            let mut snapshot = guard.as_ref().clone();
+            // removes the oldest memtable
+            let mem = snapshot.imm_memtables.pop().unwrap();
+            assert_eq!(mem.id(), sst_id);
+            if self.compaction_controller.flush_to_l0() {
+                // In leveled compaction or no compaction, simply flush to L0
+                snapshot.l0_sstables.insert(0, sst_id);
+            } else {
+                // In tiered compaction, create a new tier
+                snapshot.levels.insert(0, (sst_id, vec![sst_id]));
+            }
+            println!("flushed {}.sst with size={}", sst_id, sst.table_size());
+            snapshot.sstables.insert(sst_id, sst);
+            // Update the snapshot.
+            *guard = Arc::new(snapshot);
+        }
+
+        // if WAL was enabled, remove it now that the data is safely persisted in an SST file
+        if self.options.enable_wal {
+            std::fs::remove_file(self.path_of_wal(sst_id))?;
+        }
+
+        // update manifest so recovery knows about the new SST
+        self.manifest
+            .as_ref()
+            .unwrap()
+            .add_record(&state_lock, ManifestRecord::Flush(sst_id))?;
+
+        self.sync_dir()?;
+
+        Ok(())
     }
 
     pub fn new_txn(&self) -> Result<()> {
