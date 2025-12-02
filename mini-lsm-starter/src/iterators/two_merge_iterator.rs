@@ -24,7 +24,7 @@ use super::StorageIterator;
 pub struct TwoMergeIterator<A: StorageIterator, B: StorageIterator> {
     a: A,
     b: B,
-    // Add fields as need
+    choose_a: bool,
 }
 
 impl<
@@ -32,8 +32,37 @@ impl<
     B: 'static + for<'a> StorageIterator<KeyType<'a> = A::KeyType<'a>>,
 > TwoMergeIterator<A, B>
 {
+    fn choose_a(a: &A, b: &B) -> bool {
+        if !a.is_valid() {
+            return false;
+        }
+
+        if !b.is_valid() {
+            return true;
+        }
+
+        a.key() < b.key()
+    }
+
+    // skips duplicate keys in b since it's older 
+    fn skip_b(&mut self) -> Result<Self> {
+        if self.a.is_valid() && self.b.is_valid() && self.a.key() == self.b.key() {
+            self.b.next()?;
+        }
+        Ok(())
+    }
+
     pub fn create(a: A, b: B) -> Result<Self> {
-        unimplemented!()
+        let mut iter = Self {
+            choose_a: false,
+            a,
+            b,
+        }
+        // skip deleted keys in iterator b
+        // the deleted keys in iterator a will be handled differently bc they'll override b 
+        iter.skip_b()?;
+        iter.choose_a = Self::choose_a(&iter.a, &iter.b);
+        Ok(iter)
     }
 }
 
@@ -45,18 +74,34 @@ impl<
     type KeyType<'a> = A::KeyType<'a>;
 
     fn key(&self) -> Self::KeyType<'_> {
-        unimplemented!()
+        if self.choose_a {
+            return a.key();
+        }
+        b.key()
     }
 
     fn value(&self) -> &[u8] {
-        unimplemented!()
+        if self.choose_a {
+            return a.value();
+        }
+        b.value();
     }
 
     fn is_valid(&self) -> bool {
-        unimplemented!()
+        if a.is_valid() || b.is_valid() {
+            return True
+        }
+        false
     }
 
     fn next(&mut self) -> Result<()> {
-        unimplemented!()
+        if self.choose_a {
+            self.a.next()?;
+        } else {
+            self.b.next()?;
+        }
+        self.skip_b()?;
+        self.choose_a = Self::choose_a(&self.a, &self.b);
+        Ok(())
     }
 }
