@@ -44,7 +44,7 @@ impl<
         a.key() < b.key()
     }
 
-    // skips duplicate keys in b since it's older 
+    // skips duplicate keys in b since it's older
     fn skip_b(&mut self) -> Result<Self> {
         if self.a.is_valid() && self.b.is_valid() && self.a.key() == self.b.key() {
             self.b.next()?;
@@ -57,9 +57,9 @@ impl<
             choose_a: false,
             a,
             b,
-        }
+        };
         // skip deleted keys in iterator b
-        // the deleted keys in iterator a will be handled differently bc they'll override b 
+        // the deleted keys in iterator a will be handled differently bc they'll override b
         iter.skip_b()?;
         iter.choose_a = Self::choose_a(&iter.a, &iter.b);
         Ok(iter)
@@ -89,7 +89,7 @@ impl<
 
     fn is_valid(&self) -> bool {
         if a.is_valid() || b.is_valid() {
-            return True
+            return True;
         }
         false
     }
