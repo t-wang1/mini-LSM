@@ -45,7 +45,7 @@ impl<
     }
 
     // skips duplicate keys in b since it's older
-    fn skip_b(&mut self) -> Result<Self> {
+    fn skip_b(&mut self) -> Result<()> {
         if self.a.is_valid() && self.b.is_valid() && self.a.key() == self.b.key() {
             self.b.next()?;
         }
@@ -84,7 +84,7 @@ impl<
         if self.choose_a {
             return self.a.value();
         }
-        self.b.value();
+        self.b.value()
     }
 
     fn is_valid(&self) -> bool {

@@ -538,7 +538,7 @@ impl LsmStorageInner {
         let sst_id = flush_memtable.id();
         let sst = Arc::new(builder.build(
             sst_id,
-            Some(self.block.cache.clone()),
+            Some(self.block_cache.clone()),
             self.path_of_sst(sst_id),
         )?);
 
