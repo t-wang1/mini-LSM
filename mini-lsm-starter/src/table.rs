@@ -214,6 +214,7 @@ impl SsTable {
             .map_or(self.block_meta_offset, |x| x.offset);
         // determine how many bytes need to be read
         let blk_len = next_blk_offset - blk_offset - 4;
+        println!("block length: {}", blk_len);
         // read raw bytes from file
         let blk_data_with_chksum: Vec<u8> = self
             .file

@@ -664,7 +664,6 @@ impl LsmStorageInner {
             ManifestRecord::NewMemtable(memtable_id),
         )?;
         self.sync_dir()?;
-
         Ok(())
     }
 
@@ -708,6 +707,16 @@ impl LsmStorageInner {
             }
             println!("flushed {}.sst with size={}", sst_id, sst.table_size());
             snapshot.sstables.insert(sst_id, sst);
+            println!("\n----- after flush -----");
+            println!("sstables: {:?}", snapshot.l0_sstables);
+            for sst_id in &snapshot.l0_sstables {
+                let sst = &snapshot.sstables[sst_id];
+                println!("  SSTable {}: {} blocks, first_key={:?}, last_key={:?}", 
+                        sst_id, sst.num_of_blocks(),
+                        std::str::from_utf8(sst.first_key().raw_ref()),
+                        std::str::from_utf8(sst.last_key().raw_ref()));
+            }
+            println!("----------\n");
             // Update the snapshot.
             *guard = Arc::new(snapshot);
         }

@@ -52,12 +52,14 @@ impl Block {
 
 impl BlockIterator {
     fn new(block: Arc<Block>) -> Self {
+        let first_key = block.get_first_key();
+
         Self {
             block,
             key: KeyVec::new(),
             value_range: (0, 0),
             idx: 0,
-            first_key: KeyVec::new(),
+            first_key,
         }
     }
 
@@ -101,7 +103,7 @@ impl BlockIterator {
     }
 
     fn seek_to(&mut self, idx: usize) {
-        if idx > self.block.offsets.len() {
+        if idx >= self.block.offsets.len() {
             self.key.clear();
             self.value_range = (0, 0);
             return;
@@ -118,10 +120,23 @@ impl BlockIterator {
     }
 
     fn seek_to_offset(&mut self, offset: usize) {
+        println!("\n----- seek to offset -----");
+        println!("offset {}", offset);
+        println!("block data length: {}", self.block.data.len());
+
         let mut entry = &self.block.data[offset..];
+        println!("entry.len() after slice: {}", entry.len());
+        
         let overlap_len = entry.get_u16() as usize;
+        println!("overlap_len: {}", overlap_len);
+        
         let key_len = entry.get_u16() as usize;
-        let key = &entry[key_len..];
+        println!("first_key.len(): {}", self.first_key.len());
+        println!("key_len: {}", key_len);
+        println!("entry.len() before key slice: {}", entry.len());
+        
+        let key = &entry[..key_len];
+        println!("Got key slice");
         self.key.clear();
         self.key.append(&self.first_key.raw_ref()[..overlap_len]);
         self.key.append(key);

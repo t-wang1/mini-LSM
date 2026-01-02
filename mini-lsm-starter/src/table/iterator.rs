@@ -57,6 +57,7 @@ impl SsTableIterator {
     }
 
     fn seek_to_key_inner(table: &Arc<SsTable>, key: KeySlice) -> Result<(usize, BlockIterator)> {
+        println!("seeking in sstable: {}", table.id);
         let mut blk_idx = table.find_block_idx(key);
         let mut blk_iter =
             BlockIterator::create_and_seek_to_key(table.read_block_cached(blk_idx)?, key);
