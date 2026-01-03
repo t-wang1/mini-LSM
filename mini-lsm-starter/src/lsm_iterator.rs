@@ -76,7 +76,7 @@ impl StorageIterator for LsmIterator {
     type KeyType<'a> = &'a [u8];
 
     fn is_valid(&self) -> bool {
-        self.is_valid()
+        self.is_valid
     }
 
     fn key(&self) -> &[u8] {

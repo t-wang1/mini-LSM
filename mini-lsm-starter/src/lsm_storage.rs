@@ -742,19 +742,19 @@ impl LsmStorageInner {
         Ok(())
     }
 
-    /// Create an iterator over a range of keys.
+    // Create an iterator over a range of keys.
     pub fn scan(
         &self,
         lower: Bound<&[u8]>,
         upper: Bound<&[u8]>,
     ) -> Result<FusedIterator<LsmIterator>> {
-        /// get a snapshot of the state
+        // get a snapshot of the state
         let snapshot = {
             let guard = self.state.read();
             Arc::clone(&guard)
         };
 
-        /// collect memtable iterators
+        // collect memtable iterators
         let mut memtable_iters = Vec::with_capacity(snapshot.imm_memtables.len() + 1);
         memtable_iters.push(Box::new(snapshot.memtable.scan(lower, upper)));
         for memtable in snapshot.imm_memtables.iter() {
@@ -762,7 +762,7 @@ impl LsmStorageInner {
         }
         let memtable_iter = MergeIterator::create(memtable_iters);
 
-        /// collect L0 SSTable iterators
+        // collect L0 SSTable iterators
         let mut table_iters = Vec::with_capacity(snapshot.l0_sstables.len());
         for table_id in snapshot.l0_sstables.iter() {
             let table = snapshot.sstables[table_id].clone();
@@ -793,7 +793,7 @@ impl LsmStorageInner {
         }
         let l0_iter = MergeIterator::create(table_iters);
 
-        /// collect iterators for each level
+        // collect iterators for each level
         let mut level_iters = Vec::with_capacity(snapshot.levels.len());
         for (_, level_sst_ids) in &snapshot.levels {
             let mut level_ssts = Vec::with_capacity(level_sst_ids.len());
@@ -829,7 +829,7 @@ impl LsmStorageInner {
             level_iters.push(Box::new(level_iter));
         }
 
-        /// merge everything together
+        // merge everything together
         let iter = TwoMergeIterator::create(memtable_iter, l0_iter)?;
         let iter = TwoMergeIterator::create(iter, MergeIterator::create(level_iters))?;
 

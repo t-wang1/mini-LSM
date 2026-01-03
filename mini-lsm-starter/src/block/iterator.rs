@@ -120,23 +120,10 @@ impl BlockIterator {
     }
 
     fn seek_to_offset(&mut self, offset: usize) {
-        println!("\n----- seek to offset -----");
-        println!("offset {}", offset);
-        println!("block data length: {}", self.block.data.len());
-
         let mut entry = &self.block.data[offset..];
-        println!("entry.len() after slice: {}", entry.len());
-        
         let overlap_len = entry.get_u16() as usize;
-        println!("overlap_len: {}", overlap_len);
-        
-        let key_len = entry.get_u16() as usize;
-        println!("first_key.len(): {}", self.first_key.len());
-        println!("key_len: {}", key_len);
-        println!("entry.len() before key slice: {}", entry.len());
-        
+        let key_len = entry.get_u16() as usize;        
         let key = &entry[..key_len];
-        println!("Got key slice");
         self.key.clear();
         self.key.append(&self.first_key.raw_ref()[..overlap_len]);
         self.key.append(key);
